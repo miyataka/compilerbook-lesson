@@ -119,37 +119,6 @@ Token *tokenize() {
     return head.next;
 }
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "%s: invalid number of arguments\n", argv[0]);
-        return 1;
-    }
-
-    // tokenize
-    user_input = argv[1];
-    token = tokenize();
-
-    // print assembly prefix
-    printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
-
-    printf("  mov rax, %d\n", expect_number());
-
-    while(!at_eof()) {
-        if (consume('+')) {
-            printf("  add rax, %d\n", expect_number());
-            continue;
-        }
-
-        expect('-');
-        printf("  sub rax, %d\n", expect_number());
-    }
-
-    printf("  ret\n");
-    return 0;
-}
-
 typedef enum {
     ND_ADD, // +
     ND_SUB, // -
@@ -223,4 +192,60 @@ Node *expr() {
     else
       return node;
   }
+}
+
+void gen(Node *node) {
+  if (node->kind == ND_NUM) {
+    printf("  push %d\n", node->val);
+    return;
+  }
+
+  gen(node->lhs);
+  gen(node->rhs);
+
+  printf("  pop rdi\n");
+  printf("  pop rax\n");
+
+  switch (node->kind) {
+  case ND_ADD:
+    printf("  add rax, rdi\n");
+    break;
+  case ND_SUB:
+    printf("  sub rax, rdi\n");
+    break;
+  case ND_MUL:
+    printf("  imul rax, rdi\n");
+    break;
+  case ND_DIV:
+    printf("  cqo\n");
+    printf("  idiv rdi\n");
+    break;
+  }
+
+  printf("  push rax\n");
+}
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        fprintf(stderr, "%s: invalid number of arguments\n", argv[0]);
+        return 1;
+    }
+
+    // tokenize
+    user_input = argv[1];
+    token = tokenize();
+    Node *node = expr();
+
+    // print assembly prefix
+    printf(".intel_syntax noprefix\n");
+    printf(".globl main\n");
+    printf("main:\n");
+
+    gen(node);
+
+    printf("  mov rax, %d\n", expect_number());
+
+    printf("  pop rax\n");
+    printf("  ret\n");
+    return 0;
 }
