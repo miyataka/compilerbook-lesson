@@ -20,6 +20,9 @@ struct Token {
     char *str;
 };
 
+// Input program
+char *user_input;
+
 // current token
 Token *token;
 
@@ -31,6 +34,19 @@ void error(char *fmt, ...) {
     fprintf(stderr, "\n");
     exit(1);
 };
+
+void error_at(char *loc, char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+
+    int pos = loc - user_input;
+    fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, ""); // print pos spaces.
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
@@ -45,7 +61,7 @@ bool consume(char op) {
 // それ以外の場合にはエラーを報告する。
 void expect(char op) {
     if (token->kind != TK_RESERVED || token->str[0] != op)
-        error("'%c'ではありません", op);
+        error_at(token->str, "expected '%c'", op);
     token = token->next;
 }
 
@@ -53,7 +69,7 @@ void expect(char op) {
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
     if (token->kind != TK_NUM)
-        error("数ではありません");
+        error_at(token->str, "expected a number");
     int val = token->val;
     token = token->next;
     return val;
@@ -72,7 +88,8 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
   return tok;
 }
 
-Token *tokenize(char *p) {
+Token *tokenize() {
+    char *p = user_input;
     Token head;
     head.next = NULL;
     Token *cur = &head;
@@ -95,7 +112,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        error("cannot tokenize");
+        error_at(p, "cannot tokenize");
     }
 
     new_token(TK_EOF, cur, p);
@@ -109,7 +126,8 @@ int main(int argc, char **argv) {
     }
 
     // tokenize
-    token = tokenize(argv[1]);
+    user_input = argv[1];
+    token = tokenize();
 
     // print assembly prefix
     printf(".intel_syntax noprefix\n");
