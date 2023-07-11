@@ -137,19 +137,23 @@ struct Node {
     int val;       // used if kind == ND_NUM
 };
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
-    node->lhs = lhs;
-    node->rhs = rhs;
     return node;
 }
 
-Node *new_node_num(int val) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_NUM;
+Node *new_num(int val) {
+    Node *node = new_node(ND_NUM);
     node->val = val;
     return node;
+}
+
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = new_node(kind);
+  node->lhs = lhs;
+  node->rhs = rhs;
+  return node;
 }
 
 Node *primary();
@@ -165,7 +169,7 @@ Node *primary() {
   }
 
   // そうでなければ数値のはず
-  return new_node_num(expect_number());
+  return new_num(expect_number());
 }
 
 Node *mul() {
@@ -173,9 +177,9 @@ Node *mul() {
 
   for (;;) {
     if (consume('*'))
-      node = new_node(ND_MUL, node, primary());
+      node = new_binary(ND_MUL, node, primary());
     else if (consume('/'))
-      node = new_node(ND_DIV, node, primary());
+      node = new_binary(ND_DIV, node, primary());
     else
       return node;
   }
@@ -186,9 +190,9 @@ Node *expr() {
 
   for (;;) {
     if (consume('+'))
-      node = new_node(ND_ADD, node, mul());
+      node = new_binary(ND_ADD, node, mul());
     else if (consume('-'))
-      node = new_node(ND_SUB, node, mul());
+      node = new_binary(ND_SUB, node, mul());
     else
       return node;
   }
