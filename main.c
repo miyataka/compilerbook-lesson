@@ -143,12 +143,6 @@ Node *new_node(NodeKind kind) {
     return node;
 }
 
-Node *new_num(int val) {
-    Node *node = new_node(ND_NUM);
-    node->val = val;
-    return node;
-}
-
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = new_node(kind);
   node->lhs = lhs;
@@ -156,20 +150,27 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
   return node;
 }
 
-Node *primary();
-Node *mul();
-Node *expr();
-
-Node *primary() {
-  // 次のトークンが"("なら、"(" expr ")"のはず
-  if (consume('(')) {
-    Node *node = expr();
-    expect(')');
+Node *new_num(int val) {
+    Node *node = new_node(ND_NUM);
+    node->val = val;
     return node;
-  }
+}
 
-  // そうでなければ数値のはず
-  return new_num(expect_number());
+Node *expr();
+Node *mul();
+Node *primary();
+
+Node *expr() {
+  Node *node = mul();
+
+  for (;;) {
+    if (consume('+'))
+      node = new_binary(ND_ADD, node, mul());
+    else if (consume('-'))
+      node = new_binary(ND_SUB, node, mul());
+    else
+      return node;
+  }
 }
 
 Node *mul() {
@@ -185,17 +186,16 @@ Node *mul() {
   }
 }
 
-Node *expr() {
-  Node *node = mul();
-
-  for (;;) {
-    if (consume('+'))
-      node = new_binary(ND_ADD, node, mul());
-    else if (consume('-'))
-      node = new_binary(ND_SUB, node, mul());
-    else
-      return node;
+Node *primary() {
+  // 次のトークンが"("なら、"(" expr ")"のはず
+  if (consume('(')) {
+    Node *node = expr();
+    expect(')');
+    return node;
   }
+
+  // そうでなければ数値のはず
+  return new_num(expect_number());
 }
 
 void gen(Node *node) {
@@ -230,10 +230,8 @@ void gen(Node *node) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "%s: invalid number of arguments\n", argv[0]);
-        return 1;
-    }
+    if (argc != 2)
+        error("%s: invalid number of arguments\n", argv[0]);
 
     // tokenize
     user_input = argv[1];
