@@ -112,7 +112,7 @@ Token *tokenize() {
             continue;
         }
 
-        error_at(p, "cannot tokenize");
+        error_at(p, "invalid token");
     }
 
     new_token(TK_EOF, cur, p);
