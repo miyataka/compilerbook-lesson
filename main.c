@@ -95,7 +95,6 @@ Token *tokenize() {
     Token *cur = &head;
 
     while (*p) {
-        // 空白文字をスキップ
         if (isspace(*p)) {
             p++;
             continue;
@@ -244,8 +243,6 @@ int main(int argc, char **argv) {
     printf("main:\n");
 
     gen(node);
-
-    printf("  mov rax, %d\n", expect_number());
 
     printf("  pop rax\n");
     printf("  ret\n");
