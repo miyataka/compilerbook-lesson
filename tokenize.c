@@ -26,6 +26,13 @@ void error_at(char *loc, char *fmt, ...) {
   exit(1);
 }
 
+char *strndup(char *p, int len) {
+  char *buf = malloc(len + 1);
+  strncpy(buf, p, len);
+  buf[len] = '\0';
+  return buf;
+}
+
 // Consumes the current token if it matches `op`.
 bool consume(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
@@ -123,9 +130,12 @@ Token *tokenize() {
     }
 
     // Identifier
-    if ('a' <= *p && *p <= 'z') {
-        cur = new_token(TK_IDENT, cur, p++, 1);
-        continue;
+    if (is_alpha(*p)) {
+      char *q = p++;
+      while (is_alnum(*p))
+        p++;
+      cur = new_token(TK_IDENT, cur, q, p - q);
+      continue;
     }
 
     // Integer literal
